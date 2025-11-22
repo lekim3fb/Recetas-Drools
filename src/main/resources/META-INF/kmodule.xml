@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://www.drools.org/xsd/kmodule">
+    <!-- Base de Datos Module - Inicialización de hechos -->
+    <kbase name="BaseDatos" packages="sbc.example.rules" default="false">
+        <ksession name="BaseDatosSession" type="stateful" default="false"/>
+    </kbase>
+
+    <!-- Validación Module - Validación de datos de usuario -->
+    <kbase name="Validacion" packages="sbc.example.rules" includes="BaseDatos" default="false">
+        <ksession name="ValidacionSession" type="stateful" default="false"/>
+    </kbase>
+
+    <!-- Filtrado Module - Descartar recetas incompatibles -->
+    <kbase name="Filtrado" packages="sbc.example.rules" includes="Validacion" default="false">
+        <ksession name="FiltradoSession" type="stateful" default="false"/>
+    </kbase>
+
+    <!-- Puntuación Module - Calcular puntuaciones -->
+    <kbase name="Puntuacion" packages="sbc.example.rules" includes="Filtrado" default="false">
+        <ksession name="PuntuacionSession" type="stateful" default="false"/>
+    </kbase>
+
+    <!-- Explicación Module - Generar explicaciones -->
+    <kbase name="Explicacion" packages="sbc.example.rules" includes="Puntuacion" default="false">
+        <ksession name="ExplicacionSession" type="stateful" default="false"/>
+    </kbase>
+
+    <!-- Informe Module - Mostrar resultados finales -->
+    <kbase name="Informe" packages="sbc.example.rules" includes="Explicacion" default="true">
+        <ksession name="InformeSession" type="stateful" default="true"/>
+    </kbase>
+</kmodule>

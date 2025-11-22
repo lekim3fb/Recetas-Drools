@@ -1,0 +1,169 @@
+package sbc.example.rules;
+
+import sbc.example.Ingrediente;
+import sbc.example.Receta;
+import sbc.example.Usuario;
+
+/**
+ * Módulo de base de datos - Contiene hechos estáticos del sistema
+ */
+
+rule "Inicializar Ingredientes"
+    salience 1000
+when
+    Usuario($nombre: nombre) and
+    not (Ingrediente())
+then
+    insert(new Ingrediente("tomate", "vegetal", 0.9, 3.9, 0.2, 18));
+    insert(new Ingrediente("cebolla", "vegetal", 1.1, 9, 0.1, 40));
+    insert(new Ingrediente("ajo", "vegetal", 6.4, 33, 0.5, 149));
+    insert(new Ingrediente("harina", "carbohidrato", 10, 76, 1, 364));
+    insert(new Ingrediente("huevo", "proteína", 13, 1.1, 11, 155));
+    insert(new Ingrediente("pechuga de pollo", "proteína", 31, 0, 3.6, 165));
+    insert(new Ingrediente("salmón", "proteína", 25, 0, 13, 208));
+    insert(new Ingrediente("lechuga", "vegetal", 1.2, 2.9, 0.2, 15));
+    
+    Ingrediente queso = new Ingrediente("queso", "lácteo", 25, 1.3, 33, 402);
+    queso.addAlergia("lactosa");
+    insert(queso);
+    
+    Ingrediente leche = new Ingrediente("leche", "lácteo", 3.2, 4.8, 3.3, 61);
+    leche.addAlergia("lactosa");
+    insert(leche);
+    
+    insert(new Ingrediente("levadura", "especia", 0, 0, 0, 0));
+    insert(new Ingrediente("aceite de oliva", "grasa", 0, 0, 100, 884));
+    insert(new Ingrediente("sal", "especia", 0, 0, 0, 0));
+    insert(new Ingrediente("pasta", "carbohidrato", 13, 75, 1.1, 371));
+    insert(new Ingrediente("arroz", "carbohidrato", 6.6, 80, 0.3, 365));
+    insert(new Ingrediente("garbanzos", "proteína", 19, 64, 6, 380));
+    insert(new Ingrediente("espinaca", "vegetal", 2.7, 3.6, 0.4, 23));
+    
+    System.out.println("Base de datos de ingredientes inicializada (17 ingredientes)");
+end
+
+rule "Crear Receta Pasta a la Tomate"
+    salience 999
+when
+    Ingrediente(nombre == "pasta") and
+    not (Receta(nombre == "Pasta a la Tomate"))
+then
+    Receta pastaTomate = new Receta("Pasta a la Tomate", 20, "fácil", "principal");
+    pastaTomate.setRegion("italiana");
+    pastaTomate.setDescripcion("Clásica pasta con salsa de tomate casera");
+    pastaTomate.addDietaCompatible("vegano");
+    pastaTomate.addDietaCompatible("vegetariano");
+    insert(pastaTomate);
+end
+
+rule "Crear Receta Pechuga de Pollo"
+    salience 998
+when
+    Ingrediente(nombre == "pechuga de pollo") and
+    not (Receta(nombre == "Pechuga de Pollo a la Plancha"))
+then
+    Receta pechugaPollo = new Receta("Pechuga de Pollo a la Plancha", 15, "fácil", "principal");
+    pechugaPollo.setRegion("española");
+    pechugaPollo.setDescripcion("Pollo jugoso con limón y hierbas");
+    pechugaPollo.addDietaCompatible("sin gluten");
+    pechugaPollo.addDietaCompatible("bajo en calorías");
+    insert(pechugaPollo);
+end
+
+rule "Crear Receta Omeleta"
+    salience 997
+when
+    Ingrediente(nombre == "huevo") and
+    not (Receta(nombre == "Omeleta Clásica"))
+then
+    Receta omeleta = new Receta("Omeleta Clásica", 10, "fácil", "principal");
+    omeleta.setRegion("francesa");
+    omeleta.setDescripcion("Omeleta rápida y versátil");
+    omeleta.addDietaCompatible("sin gluten");
+    insert(omeleta);
+end
+
+rule "Crear Receta Salmón"
+    salience 996
+when
+    Ingrediente(nombre == "salmón") and
+    not (Receta(nombre == "Salmón al Horno con Verduras"))
+then
+    Receta salmonHorno = new Receta("Salmón al Horno con Verduras", 25, "medio", "principal");
+    salmonHorno.setRegion("nórdica");
+    salmonHorno.setDescripcion("Salmón con espinacas y limón");
+    salmonHorno.addDietaCompatible("sin gluten");
+    salmonHorno.addDietaCompatible("alto en proteína");
+    insert(salmonHorno);
+end
+
+rule "Poblar Pasta a la Tomate"
+    salience 995
+when
+    $pasta: Ingrediente(nombre == "pasta")
+    $tomate: Ingrediente(nombre == "tomate")
+    $cebolla: Ingrediente(nombre == "cebolla")
+    $ajo: Ingrediente(nombre == "ajo")
+    $aceite: Ingrediente(nombre == "aceite de oliva")
+    $sal: Ingrediente(nombre == "sal")
+    $receta: Receta(nombre == "Pasta a la Tomate")
+then
+    $receta.addIngrediente($pasta, 400, "gramos");
+    $receta.addIngrediente($tomate, 500, "gramos");
+    $receta.addIngrediente($cebolla, 1, "unidad");
+    $receta.addIngrediente($ajo, 2, "dientes");
+    $receta.addIngrediente($aceite, 30, "ml");
+    $receta.addIngrediente($sal, 5, "gramos");
+end
+
+rule "Poblar Pechuga de Pollo"
+    salience 994
+when
+    $pechuga: Ingrediente(nombre == "pechuga de pollo")
+    $aceite: Ingrediente(nombre == "aceite de oliva")
+    $sal: Ingrediente(nombre == "sal")
+    $receta: Receta(nombre == "Pechuga de Pollo a la Plancha")
+then
+    $receta.addIngrediente($pechuga, 200, "gramos");
+    $receta.addIngrediente($aceite, 10, "ml");
+    $receta.addIngrediente($sal, 3, "gramos");
+end
+
+rule "Poblar Omeleta"
+    salience 993
+when
+    $huevo: Ingrediente(nombre == "huevo")
+    $aceite: Ingrediente(nombre == "aceite de oliva")
+    $sal: Ingrediente(nombre == "sal")
+    $receta: Receta(nombre == "Omeleta Clásica")
+then
+    $receta.addIngrediente($huevo, 3, "unidades");
+    $receta.addIngrediente($aceite, 15, "ml");
+    $receta.addIngrediente($sal, 2, "gramos");
+end
+
+rule "Poblar Salmón al Horno"
+    salience 992
+when
+    $salmon: Ingrediente(nombre == "salmón")
+    $espinaca: Ingrediente(nombre == "espinaca")
+    $aceite: Ingrediente(nombre == "aceite de oliva")
+    $sal: Ingrediente(nombre == "sal")
+    $receta: Receta(nombre == "Salmón al Horno con Verduras")
+then
+    $receta.addIngrediente($salmon, 300, "gramos");
+    $receta.addIngrediente($espinaca, 200, "gramos");
+    $receta.addIngrediente($aceite, 20, "ml");
+    $receta.addIngrediente($sal, 5, "gramos");
+end
+
+rule "Mostrar Inicialización Completada"
+    salience 990
+when
+    Receta(nombre == "Pasta a la Tomate", ingredientes.size() > 0)
+    Receta(nombre == "Pechuga de Pollo a la Plancha", ingredientes.size() > 0)
+    Receta(nombre == "Omeleta Clásica", ingredientes.size() > 0)
+    Receta(nombre == "Salmón al Horno con Verduras", ingredientes.size() > 0)
+then
+    System.out.println("✓ Base de datos de recetas inicializada (4 recetas)");
+end

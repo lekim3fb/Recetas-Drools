@@ -1,0 +1,124 @@
+package sbc.example.rules;
+
+import sbc.example.Ingrediente;
+import sbc.example.Receta;
+import sbc.example.Usuario;
+import sbc.example.Recomendacion;
+import sbc.example.IngredienteReceta;
+
+/**
+ * Módulo de puntuación - Calcula la puntuación de las recetas recomendables
+ */
+
+query "ObtenerRecetasRecomendadas"
+    $recomendacion: Recomendacion($estado: estado == "recomendada" || estado == "alternativa")
+end
+
+rule "Puntuación base por disponibilidad de ingredientes > 70%"
+    salience 350
+when
+    $usuario: Usuario()
+    $receta: Receta($ingredientes: ingredientes)
+    eval($receta.getPorcentajeIngredientesDisponibles($usuario) >= 70)
+    not (Recomendacion(receta == $receta))
+then
+    double puntuacion = 80 + ($receta.getPorcentajeIngredientesDisponibles($usuario) - 70) * 0.5;
+    Recomendacion rec = new Recomendacion($receta, puntuacion, "recomendada",
+        "Tienes el " + String.format("%.0f", $receta.getPorcentajeIngredientesDisponibles($usuario)) + "% de los ingredientes");
+    $receta.setPuntuacion(puntuacion);
+    insert(rec);
+    System.out.println("✓ Recomendada: " + $receta.getNombre() + " - Puntuación: " + puntuacion);
+end
+
+rule "Puntuación alternativa por disponibilidad 50-70%"
+    salience 350
+when
+    $usuario: Usuario()
+    $receta: Receta($ingredientes: ingredientes)
+    eval($receta.getPorcentajeIngredientesDisponibles($usuario) >= 50 && 
+         $receta.getPorcentajeIngredientesDisponibles($usuario) < 70)
+    not (Recomendacion(receta == $receta))
+then
+    double puntuacion = 60 + ($receta.getPorcentajeIngredientesDisponibles($usuario) - 50) * 0.4;
+    Recomendacion rec = new Recomendacion($receta, puntuacion, "alternativa",
+        "Alternativa válida - Tienes el " + String.format("%.0f", $receta.getPorcentajeIngredientesDisponibles($usuario)) + "% de los ingredientes");
+    $receta.setPuntuacion(puntuacion);
+    insert(rec);
+    System.out.println("⚬ Alternativa: " + $receta.getNombre() + " - Puntuación: " + puntuacion);
+end
+
+rule "Descartar disponibilidad < 50%"
+    salience 350
+when
+    $usuario: Usuario()
+    $receta: Receta($ingredientes: ingredientes)
+    eval($receta.getPorcentajeIngredientesDisponibles($usuario) < 50)
+    not (Recomendacion(receta == $receta))
+then
+    Recomendacion rec = new Recomendacion($receta, 0, "descartada",
+        "Solo tienes el " + String.format("%.0f", $receta.getPorcentajeIngredientesDisponibles($usuario)) + "% de los ingredientes necesarios");
+    insert(rec);
+    System.out.println("✗ Descartada: " + $receta.getNombre() + " - Insuficiencia de ingredientes");
+end
+
+rule "Bonificación por preferencia gastronómica"
+    salience 340
+when
+    $usuario: Usuario($preferencias: preferenciasWebs)
+    $receta: Receta($region: region)
+    $pref: String() from $preferencias
+    eval($region != null && $region.equals($pref))
+    $rec: Recomendacion(receta == $receta)
+then
+    double nuevaPuntuacion = $rec.getPuntuacion() + 15;
+    $rec.setPuntuacion(nuevaPuntuacion);
+    $receta.addRazonRecomendacion("Coincide con tu preferencia gastronómica: " + $region);
+    System.out.println("+ Bonificación: " + $receta.getNombre() + " por preferencia gastronómica (+15)");
+end
+
+rule "Bonificación por compatibilidad con dieta"
+    salience 340
+when
+    $usuario: Usuario($restricciones: restricciones)
+    $receta: Receta($dietas: dietasCompatibles)
+    $rest: String() from $restricciones
+    eval($rest.equals("vegetariano") || $rest.equals("vegano") || 
+         $rest.equals("sin gluten") || $rest.equals("bajo en calorías") || 
+         $rest.equals("alto en proteína"))
+    eval($dietas.contains($rest))
+    $rec: Recomendacion(receta == $receta)
+then
+    double nuevaPuntuacion = $rec.getPuntuacion() + 20;
+    $rec.setPuntuacion(nuevaPuntuacion);
+    $receta.addRazonRecomendacion("Compatible con tu preferencia dietética: " + $rest);
+    System.out.println("+ Bonificación: " + $receta.getNombre() + " por compatibilidad dietética (+20)");
+end
+
+rule "Bonificación por rapidez"
+    salience 335
+when
+    $usuario: Usuario($tiempoMax: tiempoMaximoDisponible)
+    $receta: Receta($tiempo: tiempoPreparacion)
+    eval($tiempo <= 15)
+    $rec: Recomendacion(receta == $receta)
+then
+    double nuevaPuntuacion = $rec.getPuntuacion() + 10;
+    $rec.setPuntuacion(nuevaPuntuacion);
+    $receta.addRazonRecomendacion("Receta rápida (" + $tiempo + " minutos)");
+    System.out.println("+ Bonificación: " + $receta.getNombre() + " por rapidez (+10)");
+end
+
+rule "Bonificación por nivel de dificultad apropiado"
+    salience 330
+when
+    $usuario: Usuario($habilidad: nivelHabilidad)
+    $receta: Receta($dificultad: dificultad)
+    eval(($habilidad.equals("principiante") && $dificultad.equals("fácil")) ||
+         ($habilidad.equals("intermedio") && ($dificultad.equals("fácil") || $dificultad.equals("medio"))) ||
+         ($habilidad.equals("avanzado")))
+    $rec: Recomendacion(receta == $receta)
+then
+    double nuevaPuntuacion = $rec.getPuntuacion() + 5;
+    $rec.setPuntuacion(nuevaPuntuacion);
+    System.out.println("+ Bonificación: " + $receta.getNombre() + " por nivel apropiado (+5)");
+end

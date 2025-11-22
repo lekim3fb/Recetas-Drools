@@ -1,0 +1,62 @@
+package sbc.example.rules;
+
+import sbc.example.Ingrediente;
+import sbc.example.Receta;
+import sbc.example.Usuario;
+import sbc.example.Recomendacion;
+import sbc.example.IngredienteReceta;
+
+/**
+ * Módulo de explicación - Proporciona justificaciones de las recomendaciones
+ */
+
+rule "Explicar recomendación"
+    salience 200
+when
+    $receta: Receta($nombre: nombre, $razones: razonesRecomendacion)
+    $rec: Recomendacion(receta == $receta, estado != "descartada")
+then
+    if ($razones.isEmpty()) {
+        $razones.add("Disponibilidad de ingredientes");
+    }
+end
+
+rule "Mostrar detalles de ingredientes faltantes"
+    salience 195
+when
+    $usuario: Usuario($ingredientes: ingredientesDisponibles)
+    $receta: Receta($nombre: nombre, $listaIng: ingredientes)
+    $rec: Recomendacion(receta == $receta, estado == "alternativa")
+    $ir: IngredienteReceta(ingrediente.nombre not in ($ingredientes)) from $listaIng
+then
+    String ingredientesFaltantes = $ir.getIngrediente().getNombre() + " (" + $ir.getCantidad() + " " + $ir.getUnidad() + ")";
+    $rec.setMotivo($rec.getMotivo() + " | Ingredientes faltantes: " + ingredientesFaltantes);
+    System.out.println("  └─ Ingredientes faltantes en " + $nombre + ": " + ingredientesFaltantes);
+end
+
+rule "Sugerir alternativas por falta de ingredientes"
+    salience 190
+when
+    $usuario: Usuario($ingredientes: ingredientesDisponibles)
+    $receta: Receta($nombre: nombre, $listaIng: ingredientes)
+    $rec: Recomendacion(receta == $receta, estado == "alternativa")
+    $faltanteIng: IngredienteReceta(ingrediente.nombre not in ($ingredientes)) from $listaIng
+then
+    $receta.addRazonRecomendacion("Solo falta un ingrediente - considera comprar o buscar un sustituto");
+    System.out.println("  └─ Sugerencia: " + $receta.getNombre() + " solo necesita un ingrediente extra");
+end
+
+rule "Advertencia sobre alergias potenciales"
+    salience 185
+when
+    $usuario: Usuario($restricciones: restricciones, !restricciones.isEmpty())
+    $receta: Receta($nombre: nombre)
+    $rec: Recomendacion(receta == $receta, estado != "descartada")
+then
+    System.out.println("  ℹ Verifica ingredientes según tus restricciones: " + $receta.getNombre());
+end
+
+query "ObtenerRecomendacionesConExplicacion"
+    $recomendacion: Recomendacion($nombre: receta.nombre, $puntuacion: puntuacion, 
+                                   $estado: estado, $razones: receta.razonesRecomendacion)
+end

@@ -1,0 +1,98 @@
+package sbc.example.rules;
+
+import sbc.example.Usuario;
+import sbc.example.Recomendacion;
+
+/**
+ * Módulo de informe final - Presenta los resultados de forma clara
+ */
+
+rule "Resumen de recomendaciones"
+    salience 100
+when
+    $usuario: Usuario($nombre: nombre)
+    $recomendadas: Recomendacion(estado == "recomendada")
+    not (Recomendacion(estado == "recomendada", 
+                       receta.nombre > $recomendadas.receta.nombre))
+then
+    System.out.println("\n" + "=".repeat(80));
+    System.out.println("INFORME DE RECOMENDACIONES PARA: " + $nombre);
+    System.out.println("=".repeat(80));
+end
+
+rule "Listar recetas recomendadas"
+    salience 90
+when
+    $recomendacion: Recomendacion($receta: receta, $puntuacion: puntuacion, 
+                                  estado == "recomendada")
+then
+    System.out.println("\n[RECOMENDADA] " + $receta.getNombre());
+    System.out.println("  Puntuación: " + String.format("%.1f", $puntuacion));
+    System.out.println("  Tiempo: " + $receta.getTiempoPreparacion() + " minutos");
+    System.out.println("  Dificultad: " + $receta.getDificultad());
+    System.out.println("  Región: " + ($receta.getRegion() != null ? $receta.getRegion() : "General"));
+    System.out.println("  Motivo: " + $recomendacion.getMotivo());
+    
+    if (!$receta.getRazonesRecomendacion().isEmpty()) {
+        System.out.println("  Razones adicionales:");
+        for (String razon : $receta.getRazonesRecomendacion()) {
+            System.out.println("    • " + razon);
+        }
+    }
+end
+
+rule "Listar recetas alternativas"
+    salience 85
+when
+    $recomendacion: Recomendacion($receta: receta, $puntuacion: puntuacion, 
+                                  estado == "alternativa")
+then
+    System.out.println("\n[ALTERNATIVA] " + $receta.getNombre());
+    System.out.println("  Puntuación: " + String.format("%.1f", $puntuacion));
+    System.out.println("  Tiempo: " + $receta.getTiempoPreparacion() + " minutos");
+    System.out.println("  Dificultad: " + $receta.getDificultad());
+    System.out.println("  Motivo: " + $recomendacion.getMotivo());
+end
+
+rule "Mostrar recetas descartadas si existen"
+    salience 80
+when
+    $recomendacion: Recomendacion(estado == "descartada")
+    not (Recomendacion(estado == "descartada", 
+                       receta.nombre < $recomendacion.receta.nombre))
+then
+    System.out.println("\n" + "-".repeat(80));
+    System.out.println("RECETAS DESCARTADAS:");
+    System.out.println("-".repeat(80));
+end
+
+rule "Listar detalles de descartadas"
+    salience 70
+when
+    $recomendacion: Recomendacion($receta: receta, estado == "descartada")
+then
+    System.out.println("[DESCARTADA] " + $receta.getNombre() + " - " + $recomendacion.getMotivo());
+end
+
+rule "Mostrar resumen final"
+    salience 50
+when
+    $usuario: Usuario($nombre: nombre)
+    not (Recomendacion(estado == "recomendada"))
+then
+    System.out.println("\n" + "=".repeat(80));
+    System.out.println("NOTA: No hay recetas recomendadas que cumplan todos los criterios.");
+    System.out.println("Por favor, ajusta tus preferencias o ingredientes disponibles.");
+    System.out.println("=".repeat(80) + "\n");
+end
+
+rule "Mostrar resumen final con éxito"
+    salience 45
+when
+    $usuario: Usuario($nombre: nombre)
+    $recomendadas: Recomendacion(estado == "recomendada")
+then
+    System.out.println("\n" + "=".repeat(80));
+    System.out.println("FIN DEL INFORME");
+    System.out.println("=".repeat(80) + "\n");
+end

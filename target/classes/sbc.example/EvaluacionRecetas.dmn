@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/DMN/20191111/MODEL/" 
+             xmlns:dmndi="http://www.omg.org/spec/DMN/20191111/DMNDI/" 
+             xmlns:dc="http://www.omg.org/spec/DMN/20191111/DC/" 
+             xmlns:di="http://www.omg.org/spec/DMN/20191111/DI/" 
+             id="EvaluacionRecetas" 
+             name="Evaluacion de Calidad de Recetas"
+             typeLanguage="http://www.omg.org/spec/DMN/20191111/FEEL/">
+
+    <!-- Definición del modelo de decisión -->
+    <decision id="DecisionEvaluacionReceta" name="Evaluar Calidad de Receta">
+        <variable name="Resultado" typeRef="string"/>
+        <informationRequirement>
+            <requiredInput href="#InputPorcentajeIngredientes"/>
+        </informationRequirement>
+        <informationRequirement>
+            <requiredInput href="#InputTiempoMinutos"/>
+        </informationRequirement>
+        <informationRequirement>
+            <requiredInput href="#InputDificultad"/>
+        </informationRequirement>
+        <decisionTable id="dt_evaluacion" hitPolicy="UNIQUE">
+            <input id="input_porcentaje">
+                <inputExpression typeRef="number">
+                    <text>porcentajeIngredientes</text>
+                </inputExpression>
+            </input>
+            <input id="input_tiempo">
+                <inputExpression typeRef="number">
+                    <text>tiempoMinutos</text>
+                </inputExpression>
+            </input>
+            <input id="input_dificultad">
+                <inputExpression typeRef="string">
+                    <text>nivelDificultad</text>
+                </inputExpression>
+            </input>
+            <output id="output_resultado" typeRef="string"/>
+            
+            <!-- Regla 1: Receta óptima -->
+            <rule id="rule_optima">
+                <inputEntry id="rule_optima_input1">
+                    <text>> 85</text>
+                </inputEntry>
+                <inputEntry id="rule_optima_input2">
+                    <text>&lt;= 15</text>
+                </inputEntry>
+                <inputEntry id="rule_optima_input3">
+                    <text>"fácil", "medio"</text>
+                </inputEntry>
+                <outputEntry id="rule_optima_output">
+                    <text>"óptima"</text>
+                </outputEntry>
+            </rule>
+            
+            <!-- Regla 2: Receta buena -->
+            <rule id="rule_buena">
+                <inputEntry id="rule_buena_input1">
+                    <text>70..85</text>
+                </inputEntry>
+                <inputEntry id="rule_buena_input2">
+                    <text>&lt;= 30</text>
+                </inputEntry>
+                <inputEntry id="rule_buena_input3">
+                    <text>-</text>
+                </inputEntry>
+                <outputEntry id="rule_buena_output">
+                    <text>"buena"</text>
+                </outputEntry>
+            </rule>
+            
+            <!-- Regla 3: Receta aceptable -->
+            <rule id="rule_aceptable">
+                <inputEntry id="rule_aceptable_input1">
+                    <text>50..70</text>
+                </inputEntry>
+                <inputEntry id="rule_aceptable_input2">
+                    <text>-</text>
+                </inputEntry>
+                <inputEntry id="rule_aceptable_input3">
+                    <text>-</text>
+                </inputEntry>
+                <outputEntry id="rule_aceptable_output">
+                    <text>"aceptable"</text>
+                </outputEntry>
+            </rule>
+            
+            <!-- Regla 4: Rechazar receta -->
+            <rule id="rule_rechazar">
+                <inputEntry id="rule_rechazar_input1">
+                    <text>&lt; 50</text>
+                </inputEntry>
+                <inputEntry id="rule_rechazar_input2">
+                    <text>-</text>
+                </inputEntry>
+                <inputEntry id="rule_rechazar_input3">
+                    <text>-</text>
+                </inputEntry>
+                <outputEntry id="rule_rechazar_output">
+                    <text>"rechazar"</text>
+                </outputEntry>
+            </rule>
+        </decisionTable>
+    </decision>
+
+    <!-- Inputs -->
+    <inputData id="InputPorcentajeIngredientes" name="Porcentaje de Ingredientes">
+        <variable name="porcentajeIngredientes" typeRef="number"/>
+    </inputData>
+
+    <inputData id="InputTiempoMinutos" name="Tiempo de Preparación (minutos)">
+        <variable name="tiempoMinutos" typeRef="number"/>
+    </inputData>
+
+    <inputData id="InputDificultad" name="Nivel de Dificultad">
+        <variable name="nivelDificultad" typeRef="string"/>
+    </inputData>
+
+    <!-- Visualización DMNDI -->
+    <dmndi:DMNDI>
+        <dmndi:DMNDiagram id="DMNDiagram_1">
+            <dmndi:Size width="1200" height="800"/>
+            
+            <dmndi:DMNShape dmnElementRef="DecisionEvaluacionReceta" id="DMNShape_Decision">
+                <dc:Bounds x="400" y="200" width="200" height="80"/>
+            </dmndi:DMNShape>
+            
+            <dmndi:DMNShape dmnElementRef="InputPorcentajeIngredientes" id="DMNShape_Input1">
+                <dc:Bounds x="100" y="400" width="160" height="80"/>
+            </dmndi:DMNShape>
+            
+            <dmndi:DMNShape dmnElementRef="InputTiempoMinutos" id="DMNShape_Input2">
+                <dc:Bounds x="400" y="400" width="160" height="80"/>
+            </dmndi:DMNShape>
+            
+            <dmndi:DMNShape dmnElementRef="InputDificultad" id="DMNShape_Input3">
+                <dc:Bounds x="700" y="400" width="160" height="80"/>
+            </dmndi:DMNShape>
+            
+            <dmndi:DMNEdge dmnElementRef="informationRequirement_input1" id="DMNEdge_1">
+                <di:waypoint x="180" y="400"/>
+                <di:waypoint x="450" y="280"/>
+            </dmndi:DMNEdge>
+            
+            <dmndi:DMNEdge dmnElementRef="informationRequirement_input2" id="DMNEdge_2">
+                <di:waypoint x="480" y="400"/>
+                <di:waypoint x="500" y="280"/>
+            </dmndi:DMNEdge>
+            
+            <dmndi:DMNEdge dmnElementRef="informationRequirement_input3" id="DMNEdge_3">
+                <di:waypoint x="780" y="400"/>
+                <di:waypoint x="550" y="280"/>
+            </dmndi:DMNEdge>
+        </dmndi:DMNDiagram>
+    </dmndi:DMNDI>
+</definitions>

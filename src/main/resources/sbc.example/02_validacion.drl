@@ -1,0 +1,61 @@
+package sbc.example.rules;
+
+import sbc.example.Ingrediente;
+import sbc.example.Receta;
+import sbc.example.Usuario;
+import sbc.example.Recomendacion;
+import sbc.example.IngredienteReceta;
+
+/**
+ * Módulo de validación - Comprueba que los datos introducidos sean correctos
+ */
+
+rule "Validar usuario"
+    salience 500
+when
+    $usuario: Usuario($nombre: nombre)
+then
+    if ($usuario.validarDatos()) {
+        System.out.println("\n VALIDACIÓN EXITOSA - Usuario: " + $nombre);
+        for (String tip : $usuario.getTipsvalidacion()) {
+            System.out.println(" --> " + tip);
+        }
+    } else {
+        System.out.println("\n VALIDACIÓN FALLIDA - Usuario: " + $nombre);
+        for (String tip : $usuario.getTipsvalidacion()) {
+            System.out.println(" -->" + tip);
+        }
+    }
+end
+
+rule "Validar ingredientes disponibles"
+    salience 490
+when
+    $usuario: Usuario($ingredientes: ingredientesDisponibles)
+    $receta: Receta()
+    not (Recomendacion())
+then
+    if ($ingredientes.isEmpty()) {
+        System.out.println("\n ADVERTENCIA: " + $usuario.getNombre() + " no ha indicado ingredientes disponibles");
+    }
+end
+
+rule "Validar nivel de habilidad"
+    salience 480
+when
+    $usuario: Usuario($habilidad: nivelHabilidad)
+then
+    if ($habilidad == null || $habilidad.isEmpty()) {
+        System.out.println(" AVISO: Nivel de habilidad no especificado para " + $usuario.getNombre());
+    }
+end
+
+rule "Validar restricciones"
+    salience 470
+when
+    $usuario: Usuario($restricciones: restricciones)
+then
+    if (!$restricciones.isEmpty()) {
+        System.out.println("ℹ INFO: Restricciones detectadas para " + $usuario.getNombre() + ": " + $restricciones);
+    }
+end

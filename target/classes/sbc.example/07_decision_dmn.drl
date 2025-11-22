@@ -1,0 +1,76 @@
+package sbc.example.rules;
+
+import sbc.example.Receta;
+import sbc.example.Usuario;
+import sbc.example.Recomendacion;
+import sbc.example.EvaluacionReceta;
+
+/**
+ * Módulo de decisión DMN - Integra la evaluación de calidad con DMN
+ * Este módulo evalúa cada receta usando criterios de decisión complejos
+ */
+
+rule "Crear evaluación para cada receta recomendable"
+    salience 360
+when
+    $usuario: Usuario()
+    $receta: Receta($nombre: nombre)
+    eval($receta.getPorcentajeIngredientesDisponibles($usuario) >= 50)
+    not (EvaluacionReceta(nombreReceta == $nombre))
+then
+    EvaluacionReceta evaluacion = new EvaluacionReceta(
+        $nombre,
+        $receta.getPorcentajeIngredientesDisponibles($usuario),
+        $receta.getTiempoPreparacion(),
+        $receta.getDificultad()
+    );
+    
+    // Evaluar usando lógica local (equivalente a DMN)
+    evaluacion.evaluarLocalmente();
+    
+    insert(evaluacion);
+    System.out.println("📊 Evaluación creada para: " + $nombre + " -> " + evaluacion.getResultado());
+end
+
+rule "Aplicar decisión DMN - Receta óptima"
+    salience 365
+when
+    $evaluacion: EvaluacionReceta($resultado: resultado == "óptima")
+    $receta: Receta(nombre == $evaluacion.nombreReceta)
+    $rec: Recomendacion(receta == $receta)
+then
+    double nuevaPuntuacion = $rec.getPuntuacion() + 30;
+    $rec.setPuntuacion(nuevaPuntuacion);
+    $receta.addRazonRecomendacion("Clasificada como ÓPTIMA por el motor de decisión DMN");
+    System.out.println("✨ DMN DECISION: " + $receta.getNombre() + " clasificada como ÓPTIMA (+30)");
+end
+
+rule "Aplicar decisión DMN - Receta buena"
+    salience 365
+when
+    $evaluacion: EvaluacionReceta($resultado: resultado == "buena")
+    $receta: Receta(nombre == $evaluacion.nombreReceta)
+    $rec: Recomendacion(receta == $receta)
+then
+    double nuevaPuntuacion = $rec.getPuntuacion() + 15;
+    $rec.setPuntuacion(nuevaPuntuacion);
+    $receta.addRazonRecomendacion("Clasificada como BUENA por el motor de decisión DMN");
+    System.out.println("✨ DMN DECISION: " + $receta.getNombre() + " clasificada como BUENA (+15)");
+end
+
+rule "Aplicar decisión DMN - Receta rechazada"
+    salience 365
+when
+    $evaluacion: EvaluacionReceta($resultado: resultado == "rechazar")
+    $receta: Receta(nombre == $evaluacion.nombreReceta)
+    not (Recomendacion(receta == $receta, estado == "descartada"))
+then
+    Recomendacion rec = new Recomendacion($receta, 0, "descartada",
+        "Rechazada por el motor de decisión DMN - Insuficientes ingredientes disponibles");
+    insert(rec);
+    System.out.println("❌ DMN DECISION: " + $receta.getNombre() + " RECHAZADA por motor de decisión");
+end
+
+query "ObtenerEvaluacionesRecetas"
+    $evaluacion: EvaluacionReceta($nombre: nombreReceta, $resultado: resultado, $puntuacion: puntuacionFinal)
+end

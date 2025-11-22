@@ -1,0 +1,76 @@
+package sbc.example.rules;
+
+import sbc.example.Ingrediente;
+import sbc.example.Receta;
+import sbc.example.Usuario;
+import sbc.example.Recomendacion;
+import sbc.example.IngredienteReceta;
+
+/**
+ * Módulo de filtrado - Descarta recetas por restricciones
+ */
+
+// Consulta para obtener recetas descartadas
+query "ObtenerRecetasDescartadas"
+    $recomendacion: Recomendacion($estado: estado == "descartada")
+end
+
+rule "Descartar por alergia"
+    salience 400
+when
+    $usuario: Usuario($restricciones: restricciones)
+    $receta: Receta($ingredientes: ingredientes)
+    $igReceta: IngredienteReceta($ing: ingrediente) from $ingredientes
+    $alergia: String() from $restricciones
+    eval($ing.getAlergias().contains($alergia))
+    not (Recomendacion(receta == $receta))
+then
+    Recomendacion rec = new Recomendacion($receta, 0, "descartada", 
+        "Contiene " + $ing.getNombre() + " con alergia a: " + $alergia);
+    insert(rec);
+    System.out.println("✗ Descartada: " + $receta.getNombre() + " - " + rec.getMotivo());
+end
+
+rule "Descartar por tiempo insuficiente"
+    salience 400
+when
+    $usuario: Usuario($tiempoMax: tiempoMaximoDisponible)
+    $receta: Receta($tiempo: tiempoPreparacion)
+    eval($tiempo > $tiempoMax)
+    not (Recomendacion(receta == $receta))
+then
+    Recomendacion rec = new Recomendacion($receta, 0, "descartada",
+        "Requiere " + $tiempo + " minutos, pero solo dispone de " + $tiempoMax);
+    insert(rec);
+    System.out.println("✗ Descartada: " + $receta.getNombre() + " - Tiempo insuficiente");
+end
+
+rule "Descartar por incompatibilidad dietética"
+    salience 400
+when
+    $usuario: Usuario($restricciones: restricciones)
+    $receta: Receta($dietas: dietasCompatibles)
+    String($res: this) from $restricciones
+    eval(!$res.equals("sin gluten") && !$res.equals("bajo en calorías") && !$res.equals("alto en proteína"))
+    eval(!$dietas.contains($res))
+    not (Recomendacion(receta == $receta))
+then
+    Recomendacion rec = new Recomendacion($receta, 0, "descartada",
+        "No es compatible con la preferencia dietética: " + $res);
+    insert(rec);
+    System.out.println("✗ Descartada: " + $receta.getNombre() + " - Incompatibilidad dietética");
+end
+
+rule "Penalizar dificultad excesiva"
+    salience 395
+when
+    $usuario: Usuario($habilidad: nivelHabilidad)
+    $receta: Receta($dificultad: dificultad)
+    eval($habilidad.equals("principiante") && $dificultad.equals("difícil"))
+    not (Recomendacion(receta == $receta, estado == "descartada"))
+then
+    Recomendacion rec = new Recomendacion($receta, -50, "penalizada",
+        "Demasiado difícil para un usuario " + $habilidad);
+    insert(rec);
+    System.out.println("⚠ Penalizada: " + $receta.getNombre() + " - Dificultad excesiva para el nivel");
+end
