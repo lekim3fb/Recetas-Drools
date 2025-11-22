@@ -1,10 +1,13 @@
 from docx import Document
 from docx.shared import Pt
 import os
+import shutil
+import time
 
 # Build the report content based on the project and conversation summary
 project_root = os.path.abspath(os.path.dirname(__file__))
 output_path = os.path.join(project_root, 'Plantilla_Report.docx')
+temp_path = os.path.join(project_root, 'Plantilla_Report_TEMP.docx')
 
 doc = Document()
 
@@ -55,6 +58,31 @@ doc.add_paragraph(
     """Parte de control: el flujo es impulsado por la inserción del Usuario en la sesión Kie. Una vez disponibles los hechos (ingredientes y recetas inicializadas desde 01_basedatos), las reglas de validación se aplican, luego las de filtrado, puntuación y finalmente la generación de explicaciones e informe. El control es implícito en el motor de reglas (orden por salience y activación de reglas), y explícito en el código Java que decide cuándo crear la sesión, insertar el usuario y disparar fireAllRules()."""
 )
 
+doc.add_heading('Presentación de resultados', level=2)
+doc.add_paragraph(
+    'El sistema de presentación de resultados ha sido diseñado para mostrar únicamente información relevante al usuario final. '
+    'La interfaz interactiva en Java (Main.java) recopila los datos del usuario mediante un flujo guiado con validaciones robustas '
+    '(re-solicita entrada hasta que sea válida para opciones como nivel de habilidad, ingredientes, preferencias y restricciones). '
+    'Una vez procesadas las reglas, la salida muestra:'
+)
+
+p = doc.add_paragraph()
+p.style = 'List Bullet'
+p.add_run('Recetas recomendadas: nombre, estado, puntuación y razones de recomendación.')
+
+p = doc.add_paragraph()
+p.style = 'List Bullet'
+p.add_run('Ranking ordenado por puntuación de las recetas viables.')
+
+p = doc.add_paragraph()
+p.style = 'List Bullet'
+p.add_run('Si no existen recomendaciones: mensaje claro "Con las características del usuario no hay una receta buena para él."')
+
+doc.add_paragraph(
+    'Las recetas descartadas no se muestran en la salida final para evitar información negativa innecesaria al usuario. '
+    'El enfoque es presentar opciones constructivas: o mostramos lo que sí le recomendamos, o le informamos de forma amable que no hay receta adecuada en la base de datos actual.'
+)
+
 # Conclusions: difficulties, time spent, comments
 doc.add_heading('Conclusiones', level=2)
 doc.add_paragraph('Dificultades encontradas:')
@@ -93,13 +121,30 @@ doc.add_paragraph('Resumen estimado: ~22-24 horas (depende de pruebas y revision
 # Comments
 doc.add_heading('Comentarios finales', level=2)
 doc.add_paragraph(
-    'El proyecto proporciona una base robusta para un sistema de recomendación declarativo usando Drools. ' 
-    'Se recomienda: (1) añadir tests unitarios y de integración para las reglas, (2) extraer la inicialización de datos a ficheros de recursos o una DB para facilidad de mantenimiento, (3) mejorar el manejo de internacionalización/encodings para prevenir caracteres extraños en la consola, y (4) añadir logging (SLF4J) con implementación para producción.'
+    'El proyecto proporciona una base robusta para un sistema de recomendación declarativo usando Drools. '
+    'Se ha optimizado la experiencia del usuario ocultando información negativa (recetas descartadas) y mostrando un mensaje amable cuando no se encuentra una recomendación adecuada. '
+    'Se recomienda: (1) añadir tests unitarios y de integración para las reglas, (2) extraer la inicialización de datos a ficheros de recursos o una DB para facilidad de mantenimiento, '
+    '(3) mejorar el manejo de internacionalización/encodings para prevenir caracteres extraños en la consola, y (4) añadir logging (SLF4J) con implementación para producción.'
 )
 
 # Save document
 try:
-    doc.save(output_path)
-    print('OK: Archivo generado ->', output_path)
+    doc.save(temp_path)
+    # Try to remove old file
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            shutil.move(temp_path, output_path)
+            print('OK: Archivo generado ->', output_path)
+            break
+        except PermissionError:
+            if attempt < max_retries - 1:
+                time.sleep(1)
+            else:
+                # If all retries failed, just save to temp and inform user
+                print('OK: Archivo generado (temp) ->', temp_path)
+                print('Note: El archivo original esta en uso. Temp file:', temp_path)
 except Exception as e:
     print('ERROR al generar el documento:', e)

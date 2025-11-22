@@ -309,12 +309,23 @@ public class Main {
         System.out.println("RESULTADOS DETALLADOS DE QUERIES");
         System.out.println("=".repeat(80));
 
-        // Query 1: Obtener recetas recomendadas con explicación
-        System.out.println("\n[QUERY] Recomendaciones con explicación:");
+        // Comprobar si existen recomendaciones (con explicación o ranking)
         try {
-            QueryResults resultados = kSession.getQueryResults("ObtenerRecomendacionesConExplicacion");
-            if (resultados.size() > 0) {
-                for (QueryResultsRow row : resultados) {
+            QueryResults conExplic = kSession.getQueryResults("ObtenerRecomendacionesConExplicacion");
+            QueryResults recomendadas = kSession.getQueryResults("ObtenerRecetasRecomendadas");
+
+            int totalConExplic = (conExplic != null) ? conExplic.size() : 0;
+            int totalRanking = (recomendadas != null) ? recomendadas.size() : 0;
+
+            if (totalConExplic == 0 && totalRanking == 0) {
+                System.out.println("\n  └─ Con las características del usuario no hay una receta buena para él.");
+                return; // no mostrar descartadas ni rankings vacíos
+            }
+
+            // Mostrar recomendaciones con explicación (si las hay)
+            System.out.println("\n[QUERY] Recomendaciones con explicación:");
+            if (totalConExplic > 0) {
+                for (QueryResultsRow row : conExplic) {
                     String nombre = (String) row.get("$nombre");
                     Double puntuacion = (Double) row.get("$puntuacion");
                     String estado = (String) row.get("$estado");
@@ -331,34 +342,12 @@ public class Main {
                     }
                 }
             } else {
-                System.out.println("  └─ No hay recomendaciones disponibles");
+                System.out.println("  └─ No hay recomendaciones con explicación disponibles");
             }
-        } catch (Exception e) {
-            System.out.println("  └─ Query no disponible: " + e.getMessage());
-        }
 
-        // Query 2: Obtener recetas descartadas
-        System.out.println("\n[QUERY] Recetas descartadas:");
-        try {
-            QueryResults descartadas = kSession.getQueryResults("ObtenerRecetasDescartadas");
-            if (descartadas.size() > 0) {
-                System.out.println("  Encontradas " + descartadas.size() + " recetas descartadas");
-                for (QueryResultsRow row : descartadas) {
-                    Recomendacion rec = (Recomendacion) row.get("$recomendacion");
-                    System.out.println("  ├─ " + rec.getReceta().getNombre() + ": " + rec.getMotivo());
-                }
-            } else {
-                System.out.println("  └─ No hay recetas descartadas (excelente)");
-            }
-        } catch (Exception e) {
-            System.out.println("  └─ Query no disponible: " + e.getMessage());
-        }
-
-        // Query 3: Obtener recetas recomendadas ordenadas por puntuación
-        System.out.println("\n[QUERY] Ranking de recetas recomendadas:");
-        try {
-            QueryResults recomendadas = kSession.getQueryResults("ObtenerRecetasRecomendadas");
-            if (recomendadas.size() > 0) {
+            // Mostrar ranking de recomendadas (si hay)
+            System.out.println("\n[QUERY] Ranking de recetas recomendadas:");
+            if (totalRanking > 0) {
                 int posicion = 1;
                 for (QueryResultsRow row : recomendadas) {
                     Recomendacion rec = (Recomendacion) row.get("$recomendacion");
@@ -366,7 +355,10 @@ public class Main {
                             " (Puntuación: " + String.format("%.1f", rec.getPuntuacion()) + ")");
                     posicion++;
                 }
+            } else {
+                System.out.println("  └─ No hay ranking de recetas recomendadas");
             }
+
         } catch (Exception e) {
             System.out.println("  └─ Query no disponible: " + e.getMessage());
         }
