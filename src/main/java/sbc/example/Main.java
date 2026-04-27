@@ -17,11 +17,11 @@ public class Main {
     private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        System.out.println("\n" + "█".repeat(80));
-        System.out.println("█ SISTEMA DE RECOMENDACIÓN DE RECETAS DE COCINA                           █");
-        System.out.println("█ Basado en Drools - Sistemas Basados en el Conocimiento                 █");
-        System.out.println("█ VERSIÓN INTERACTIVA - Ingrese sus datos paso a paso                   █");
-        System.out.println("█".repeat(80) + "\n");
+        
+        System.out.println("SISTEMA DE RECOMENDACIÓN DE RECETAS DE COCINA ");
+        System.out.println("Basado en Drools - Sistemas Basados en el Conocimiento");
+        System.out.println("VERSIÓN INTERACTIVA - Ingrese sus datos paso a paso");
+       
 
         try {
             // Inicializar KieServices
