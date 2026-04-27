@@ -345,7 +345,7 @@ public class Main {
                 System.out.println("  └─ No hay recomendaciones con explicación disponibles");
             }
 
-            // Mostrar ranking de recomendadas (si hay)
+            // Mostrar ranking de recomendadas
             System.out.println("\n[QUERY] Ranking de recetas recomendadas:");
             if (totalRanking > 0) {
                 int posicion = 1;
